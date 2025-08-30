@@ -12,7 +12,10 @@ import {
   Button,
   Paper,
   Stack,
-  Divider
+  Divider,
+  AppBar,
+  Toolbar,
+  Avatar
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -152,6 +155,29 @@ const NotificationCenter = () => {
 
   return (
     <Box className="p-6">
+      <AppBar position="static">
+        <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          {/* Left side: (if you want to keep menu or logo here, else leave empty) */}
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* Right side: Website name, Notifications, Profile */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" component="div">
+              Placemint
+            </Typography>
+            <IconButton color="inherit" onClick={() => onNavigate('/notifications')}>
+              {/* Notification Icon */}
+              <Badge badgeContent={notificationCount} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+            <IconButton color="inherit" onClick={() => onNavigate('/profile')}>
+              <Avatar alt={currentUser?.name} src={currentUser?.avatarUrl} />
+            </IconButton>
+          </Box>
+        </Toolbar>
+      </AppBar>
+
       <Stack direction="row" justifyContent="space-between" alignItems="center" className="mb-6">
         <Stack direction="row" alignItems="center" spacing={2}>
           <Typography variant="h4" className="font-bold">
