@@ -5,6 +5,8 @@ import LandingPage from './components/landing/LandingPage';
 import Navigation from './components/layout/Navigation';
 import LoginForm from './components/auth/LoginForm';
 import StudentDashboard from './components/dashboard/StudentDashboard';
+import TPODashboard from './components/dashboard/TPODashboard';
+import CompanyDashboard from './components/dashboard/CompanyDashboard';
 import JobListings from './components/jobs/JobListings';
 import NotificationCenter from './components/notifications/NotificationCenter';
 import PracticeTests from './components/tests/PracticeTests';
@@ -86,6 +88,11 @@ const PlacementTracker = () => {
 
     switch (currentPath) {
       case '/dashboard':
+        if (currentUser?.role === UserRole.TPO_ADMIN) {
+          return <TPODashboard onNavigate={handleNavigation} />;
+        } else if (currentUser?.role === UserRole.COMPANY) {
+          return <CompanyDashboard onNavigate={handleNavigation} />;
+        }
         return <StudentDashboard onNavigate={handleNavigation} />;
       case '/jobs':
         return (
