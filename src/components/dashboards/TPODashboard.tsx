@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { testStore } from "@/lib/testStore";
 import { 
   Users, 
   Building2, 
@@ -14,7 +16,8 @@ import {
   UserCheck,
   CheckCircle,
   TrendingUp,
-  Calendar
+  Calendar,
+  BookOpen
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,8 +28,69 @@ interface TPODashboardProps {
 const TPODashboard = ({ user }: TPODashboardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    totalCompanies: 0,
+    totalTests: 0,
+    activeTests: 0,
+    studentsCompleted: 0,
+    placementRate: 0
+  });
+
+  useEffect(() => {
+    const loadStats = async () => {
+      // Initialize test store
+      await testStore.initialize();
+      
+      // Get test statistics
+      const allTests = testStore.getAllTests();
+      const activeTests = testStore.getActiveTests();
+      const studentsCompleted = allTests.reduce((sum, test) => sum + test.studentsCompleted, 0);
+      
+      // Get student count from database
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'student');
+      
+      // Get company count from database
+      const { data: companies } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'company');
+
+      setStats({
+        totalStudents: students?.length || 0,
+        totalCompanies: companies?.length || 0,
+        totalTests: allTests.length,
+        activeTests: activeTests.length,
+        studentsCompleted,
+        placementRate: 0 // Calculate based on actual placement data when available
+      });
+    };
+
+    loadStats();
+
+    // Subscribe to test store changes
+    const unsubscribe = testStore.subscribe(() => {
+      const allTests = testStore.getAllTests();
+      const activeTests = testStore.getActiveTests();
+      const studentsCompleted = allTests.reduce((sum, test) => sum + test.studentsCompleted, 0);
+      
+      setStats(prev => ({
+        ...prev,
+        totalTests: allTests.length,
+        activeTests: activeTests.length,
+        studentsCompleted
+      }));
+    });
+
+    return unsubscribe;
+  }, []);
 
   const handleSignOut = async () => {
+    // Clear test store cache on logout
+    testStore.clear();
     await supabase.auth.signOut();
     navigate("/");
     toast({
@@ -42,35 +106,44 @@ const TPODashboard = ({ user }: TPODashboardProps) => {
       icon: Users,
       color: "text-primary",
       bgColor: "bg-primary-light",
-      action: () => toast({ title: "Coming Soon", description: "Student management will be available soon!" }),
-      stats: "0 students registered"
+      action: () => navigate("/tpo/students"),
+      stats: `${stats.totalStudents} students registered`
     },
     {
-      title: "Company Approvals",
+      title: "Company Management",
       description: "Review and approve company applications",
       icon: Building2,
       color: "text-accent",
       bgColor: "bg-accent-light",
-      action: () => toast({ title: "Coming Soon", description: "Company approvals will be available soon!" }),
-      stats: "0 pending approvals"
+      action: () => navigate("/tpo/companies"),
+      stats: `${stats.totalCompanies} companies registered`
+    },
+    {
+      title: "Test Management",
+      description: "Create and manage tests for students",
+      icon: BookOpen,
+      color: "text-warning",
+      bgColor: "bg-warning-light",
+      action: () => navigate("/tpo/tests"),
+      stats: `${stats.totalTests} tests created`
     },
     {
       title: "Placement Analytics",
       description: "View placement statistics and trends",
       icon: BarChart3,
-      color: "text-warning",
-      bgColor: "bg-warning-light",
+      color: "text-primary",
+      bgColor: "bg-primary-light",
       action: () => toast({ title: "Coming Soon", description: "Analytics dashboard will be available soon!" }),
-      stats: "0% placement rate"
+      stats: `${stats.placementRate}% placement rate`
     },
     {
       title: "Generate Reports",
       description: "Create and export placement reports",
       icon: FileSpreadsheet,
-      color: "text-primary",
-      bgColor: "bg-primary-light",
+      color: "text-accent",
+      bgColor: "bg-accent-light",
       action: () => toast({ title: "Coming Soon", description: "Report generation will be available soon!" }),
-      stats: "0 reports generated"
+      stats: "Reports available"
     }
   ];
 
@@ -115,7 +188,7 @@ const TPODashboard = ({ user }: TPODashboardProps) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Students</p>
-                  <p className="text-2xl font-bold text-foreground">0</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.totalStudents}</p>
                 </div>
                 <Users className="h-8 w-8 text-primary" />
               </div>
@@ -127,7 +200,7 @@ const TPODashboard = ({ user }: TPODashboardProps) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Companies</p>
-                  <p className="text-2xl font-bold text-foreground">0</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.totalCompanies}</p>
                 </div>
                 <Building2 className="h-8 w-8 text-accent" />
               </div>
@@ -138,10 +211,10 @@ const TPODashboard = ({ user }: TPODashboardProps) => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Placements</p>
-                  <p className="text-2xl font-bold text-foreground">0</p>
+                  <p className="text-sm font-medium text-muted-foreground">Active Tests</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.activeTests}</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-accent" />
+                <BookOpen className="h-8 w-8 text-warning" />
               </div>
             </CardContent>
           </Card>
@@ -151,16 +224,16 @@ const TPODashboard = ({ user }: TPODashboardProps) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
-                  <p className="text-2xl font-bold text-foreground">0%</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.placementRate}%</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-warning" />
+                <TrendingUp className="h-8 w-8 text-accent" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {dashboardCards.map((card, index) => (
             <Card key={card.title} className={`bg-white border-0 shadow-lg hover:shadow-xl transition-smooth animate-slide-up`} style={{ animationDelay: `${index * 0.1}s` }}>
               <CardHeader>

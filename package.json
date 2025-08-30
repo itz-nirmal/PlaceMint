@@ -8,7 +8,12 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:init": "node scripts/init-database.js",
+    "db:setup": "echo 'Please follow the DATABASE_SETUP.md guide to set up your database'",
+    "seed:accounts": "node scripts/seed-accounts.js",
+    "complete:profiles": "node scripts/complete-profiles.js",
+    "create:role-profiles": "node scripts/create-role-profiles.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

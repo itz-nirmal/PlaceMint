@@ -43,12 +43,12 @@ const HeroSection = () => {
           </p>
           <div className="flex justify-center space-x-4">
             <Link to="/auth?type=signup">
-              <Button size="lg" className="bg-white text-primary hover:bg-white/90 hover:shadow-glow transition-smooth">
+              <Button size="lg" className="bg-accent text-white hover:bg-accent/90 hover:shadow-glow transition-smooth">
                 Start Your Journey
               </Button>
             </Link>
             <Link to="/auth">
-              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10 transition-smooth">
+              <Button size="lg" variant="outline" className="bg-accent text-white hover:bg-accent/90 hover:shadow-glow transition-smooth">
                 Sign In
               </Button>
             </Link>
@@ -73,9 +73,21 @@ const HeroSection = () => {
                 ))}
               </div>
               
-              <Link to="/auth?type=signup" className="block mt-6">
+              <Link 
+                to={
+                  role.title === "TPO/Admin" 
+                    ? "/tpo-login" 
+                    : role.title === "Company HR" 
+                    ? "/company-login" 
+                    : "/auth?type=signup"
+                } 
+                className="block mt-6"
+              >
                 <Button className="w-full bg-gradient-primary hover:shadow-glow transition-smooth">
-                  Get Started as {role.title.slice(0, -1)}
+                  {role.title === "TPO/Admin" || role.title === "Company HR" 
+                    ? `Login as ${role.title === "TPO/Admin" ? "TPO" : "Company"}` 
+                    : `Get Started as ${role.title.slice(0, -1)}`
+                  }
                 </Button>
               </Link>
             </Card>

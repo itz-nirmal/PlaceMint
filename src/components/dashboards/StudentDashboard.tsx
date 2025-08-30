@@ -41,7 +41,7 @@ const StudentDashboard = ({ user }: StudentDashboardProps) => {
       icon: FileText,
       color: "text-primary",
       bgColor: "bg-primary-light",
-      action: () => toast({ title: "Coming Soon", description: "Resume builder will be available soon!" }),
+      action: () => navigate("/student/resume"),
       stats: "0 resumes created"
     },
     {
@@ -50,7 +50,7 @@ const StudentDashboard = ({ user }: StudentDashboardProps) => {
       icon: Briefcase,
       color: "text-accent",
       bgColor: "bg-accent-light",
-      action: () => toast({ title: "Coming Soon", description: "Job applications will be available soon!" }),
+      action: () => navigate("/student/applications"),
       stats: "0 applications submitted"
     },
     {
@@ -59,7 +59,7 @@ const StudentDashboard = ({ user }: StudentDashboardProps) => {
       icon: BookOpen,
       color: "text-warning",
       bgColor: "bg-warning-light",
-      action: () => toast({ title: "Coming Soon", description: "Practice tests will be available soon!" }),
+      action: () => navigate("/student/tests"),
       stats: "0 tests completed"
     },
     {
@@ -68,7 +68,7 @@ const StudentDashboard = ({ user }: StudentDashboardProps) => {
       icon: BarChart3,
       color: "text-primary",
       bgColor: "bg-primary-light",
-      action: () => toast({ title: "Coming Soon", description: "Analytics dashboard will be available soon!" }),
+      action: () => navigate("/student/analytics"),
       stats: "No data yet"
     }
   ];
@@ -92,7 +92,7 @@ const StudentDashboard = ({ user }: StudentDashboardProps) => {
                 <Bell className="h-4 w-4 mr-2" />
                 Notifications
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => navigate("/student/profile")}>
                 <UserIcon className="h-4 w-4 mr-2" />
                 Profile
               </Button>

@@ -1,16 +1,14 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GraduationCap, AlertCircle, Loader2 } from "lucide-react";
+import { GraduationCap, AlertCircle, Loader2, Building, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-type UserRole = "student" | "tpo" | "company";
+import { ensureProfileExists } from "@/utils/profileUtils";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -24,8 +22,7 @@ const Auth = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    fullName: "",
-    role: "" as UserRole | ""
+    fullName: ""
   });
 
   useEffect(() => {
@@ -50,39 +47,77 @@ const Auth = () => {
           setError("Passwords do not match");
           return;
         }
-        
-        if (!formData.role) {
-          setError("Please select your role");
-          return;
-        }
 
         const redirectUrl = `${window.location.origin}/dashboard`;
         
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
             emailRedirectTo: redirectUrl,
             data: {
               full_name: formData.fullName,
-              role: formData.role
+              role: 'student' // Only students can sign up
             }
           }
         });
 
         if (error) throw error;
+
+        // Create profile manually since database trigger might not be set up yet
+        if (data.user) {
+          try {
+            // First create the main profile
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: data.user.id,
+                email: formData.email,
+                full_name: formData.fullName,
+                role: 'student'
+              });
+
+            if (profileError) {
+              console.error('Error creating profile:', profileError);
+            } else {
+              // Then create the student profile
+              const { error: studentError } = await supabase
+                .from('student_profiles')
+                .insert({
+                  id: data.user.id
+                });
+
+              if (studentError) {
+                console.error('Error creating student profile:', studentError);
+              }
+            }
+          } catch (profileError) {
+            console.error('Error in profile creation process:', profileError);
+            // Don't throw error here as the main signup was successful
+          }
+        }
         
         toast({
           title: "Account created successfully!",
           description: "Please check your email to verify your account.",
         });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
 
         if (error) throw error;
+
+        // Ensure profile exists for existing users (fallback)
+        if (data.user) {
+          try {
+            await ensureProfileExists(data.user.id, data.user.email || formData.email, '', 'student');
+          } catch (profileError) {
+            console.error('Error ensuring profile exists during login:', profileError);
+            // Don't throw error here as the login was successful
+          }
+        }
         
         navigate("/dashboard");
       }
@@ -99,19 +134,19 @@ const Auth = () => {
         <div className="text-center mb-8">
           <GraduationCap className="h-12 w-12 text-white mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-white">
-            {isSignUp ? "Create Account" : "Welcome Back"}
+            {isSignUp ? "Student Registration" : "Student Login"}
           </h1>
           <p className="text-white/80 mt-2">
-            {isSignUp ? "Join PlacementTracker today" : "Sign in to your account"}
+            {isSignUp ? "Create your student account" : "Sign in to your student account"}
           </p>
         </div>
 
         <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
           <CardHeader>
-            <CardTitle>{isSignUp ? "Sign Up" : "Sign In"}</CardTitle>
+            <CardTitle>{isSignUp ? "Sign Up as Student" : "Student Sign In"}</CardTitle>
             <CardDescription>
               {isSignUp 
-                ? "Enter your details to create your account" 
+                ? "Enter your details to create your student account" 
                 : "Enter your credentials to access your account"
               }
             </CardDescription>
@@ -126,32 +161,16 @@ const Auth = () => {
               )}
 
               {isSignUp && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input
-                      id="fullName"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                      placeholder="Enter your full name"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select onValueChange={(value) => setFormData(prev => ({ ...prev, role: value as UserRole }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="tpo">Training & Placement Officer</SelectItem>
-                        <SelectItem value="company">Company HR</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
               )}
 
               <div className="space-y-2">
@@ -198,7 +217,7 @@ const Auth = () => {
                 disabled={loading}
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSignUp ? "Create Account" : "Sign In"}
+                {isSignUp ? "Create Student Account" : "Sign In"}
               </Button>
             </form>
 
@@ -212,6 +231,27 @@ const Auth = () => {
                   {isSignUp ? "Sign In" : "Sign Up"}
                 </button>
               </p>
+            </div>
+
+            {/* TPO and Company Login Links */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <p className="text-sm text-muted-foreground text-center mb-4">
+                Are you a TPO or Company representative?
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Link to="/tpo-login">
+                  <Button variant="outline" className="w-full">
+                    <Users className="mr-2 h-4 w-4" />
+                    TPO Login
+                  </Button>
+                </Link>
+                <Link to="/company-login">
+                  <Button variant="outline" className="w-full">
+                    <Building className="mr-2 h-4 w-4" />
+                    Company Login
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>

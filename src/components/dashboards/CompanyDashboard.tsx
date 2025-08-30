@@ -42,16 +42,16 @@ const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
       icon: Briefcase,
       color: "text-primary",
       bgColor: "bg-primary-light",
-      action: () => toast({ title: "Coming Soon", description: "Job posting will be available soon!" }),
+      action: () => navigate("/company/jobs"),
       stats: "0 active postings"
     },
     {
-      title: "Applicant Management",
+      title: "Application Review",
       description: "Review and shortlist candidates",
       icon: Users,
       color: "text-accent",
       bgColor: "bg-accent-light",
-      action: () => toast({ title: "Coming Soon", description: "Applicant management will be available soon!" }),
+      action: () => navigate("/company/applications"),
       stats: "0 applications received"
     },
     {
