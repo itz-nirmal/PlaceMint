@@ -1,10 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { ThemeProvider, CssBaseline, Box } from '@mui/material';
 import theme from './theme';
 import LandingPage from './components/landing/LandingPage';
 import Navigation from './components/layout/Navigation';
-import LoginForm from './components/auth/LoginForm';
-import SignUpPage from './components/auth/SignUpPage';
+import AuthContainer from './components/auth/AuthContainer';
 import StudentDashboard from './components/dashboard/StudentDashboard';
 import TPODashboard from './components/dashboard/TPODashboard';
 import CompanyDashboard from './components/dashboard/CompanyDashboard';
@@ -19,61 +18,38 @@ const PlacementTracker = () => {
   const [currentPath, setCurrentPath] = useState('/landing');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
-  const [signupUserType, setSignupUserType] = useState(null);
-  // In-memory user store for demo
-  const usersRef = useRef([]);
 
   const handleEnterApp = (userType) => {
     setShowLanding(false);
     if (userType === 'login') {
       setCurrentPath('/login');
-    } else if (userType === 'student' || userType === 'tpo' || userType === 'company') {
-      setSignupUserType(userType);
-      setCurrentPath(`/signup/${userType}`);
-    }
-  };
-
-  const handleSignUp = (formData, goToLogin = false) => {
-    if (goToLogin) {
-      setCurrentPath('/login');
-      return;
-    }
-    // Add user to in-memory store
-    const newUser = {
-      id: `user_${Date.now()}`,
-      name: formData.name || formData.companyName || formData.hrName || "User",
-      email: formData.email,
-      password: formData.password,
-      role: formData.role,
-      profileComplete: true
-    };
-    usersRef.current.push(newUser);
-    setTimeout(() => {
-      setCurrentUser({ ...newUser });
+    } else {
+      // For demo purposes, auto-login based on user type
+      const mockUser = {
+        id: "user_001",
+        name: userType === 'student' ? "Rahul Sharma" : userType === 'tpo' ? "Dr. Admin" : "HR Manager",
+        email: `${userType}@placemint.com`,
+        role: userType === 'student' ? UserRole.STUDENT : userType === 'tpo' ? UserRole.TPO_ADMIN : UserRole.COMPANY,
+        profileComplete: true
+      };
+      setCurrentUser(mockUser);
       setIsAuthenticated(true);
-      let dashboardPath = '/dashboard';
-      if (newUser.role === UserRole.TPO_ADMIN) dashboardPath = '/admin/dashboard';
-      if (newUser.role === UserRole.COMPANY) dashboardPath = '/company/dashboard';
-      setCurrentPath(dashboardPath);
-    }, 1000);
+      setCurrentPath('/dashboard');
+    }
   };
 
   const handleLogin = async (credentials) => {
-    // Find user in in-memory store
-    const foundUser = usersRef.current.find(
-      u => u.email === credentials.email && u.password === credentials.password && u.role === credentials.role
-    );
+    // Simulate login
     setTimeout(() => {
-      if (foundUser) {
-        setCurrentUser({ ...foundUser });
-        setIsAuthenticated(true);
-        let dashboardPath = '/dashboard';
-        if (foundUser.role === UserRole.TPO_ADMIN) dashboardPath = '/admin/dashboard';
-        if (foundUser.role === UserRole.COMPANY) dashboardPath = '/company/dashboard';
-        setCurrentPath(dashboardPath);
-      } else {
-        alert('Invalid credentials or user not found. Please sign up first.');
-      }
+      setCurrentUser({
+        id: "user_001",
+        name: "Rahul Sharma",
+        email: credentials.email,
+        role: credentials.role,
+        profileComplete: true
+      });
+      setIsAuthenticated(true);
+      setCurrentPath('/dashboard');
     }, 1000);
   };
 
@@ -103,22 +79,7 @@ const PlacementTracker = () => {
     }
 
     if (!isAuthenticated) {
-      if (currentPath.startsWith('/signup/')) {
-        let userType = signupUserType;
-        if (currentPath === '/signup/student') userType = UserRole.STUDENT;
-        if (currentPath === '/signup/tpo') userType = UserRole.TPO_ADMIN;
-        if (currentPath === '/signup/company') userType = UserRole.COMPANY;
-        return (
-          <Box className="min-h-screen flex items-center justify-center" sx={{ background: 'linear-gradient(45deg, #0f0f23, #1a1a2e)' }}>
-            <SignUpPage userType={userType} onSignUp={handleSignUp} />
-          </Box>
-        );
-      }
-      return (
-        <Box className="min-h-screen flex items-center justify-center" sx={{ background: 'linear-gradient(45deg, #0f0f23, #1a1a2e)' }}>
-          <LoginForm onLogin={handleLogin} />
-        </Box>
-      );
+      return <AuthContainer onLogin={handleLogin} onSignup={handleLogin} />;
     }
 
     switch (currentPath) {
@@ -129,20 +90,6 @@ const PlacementTracker = () => {
           return <CompanyDashboard onNavigate={handleNavigation} />;
         }
         return <StudentDashboard onNavigate={handleNavigation} />;
-      case '/admin/dashboard':
-        return (
-          <Box className="p-6">
-            <h2 className="text-2xl font-bold mb-4">TPO/Admin Dashboard</h2>
-            <p>Welcome, TPO/Admin! Dashboard coming soon...</p>
-          </Box>
-        );
-      case '/company/dashboard':
-        return (
-          <Box className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Company Dashboard</h2>
-            <p>Welcome, Company! Dashboard coming soon...</p>
-          </Box>
-        );
       case '/jobs':
         return (
           <JobListings

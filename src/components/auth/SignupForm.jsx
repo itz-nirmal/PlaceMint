@@ -14,23 +14,31 @@ import {
   Box,
   IconButton,
   InputAdornment,
-  Divider
+  Divider,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 import { UserRole } from '../../data/enums';
-import LockPersonOutlinedIcon from '@mui/icons-material/LockPersonOutlined';
+import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import LockPersonOutlinedIcon from '@mui/icons-material/LockPersonOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 
-const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null }) => {
+const SignupForm = ({ onSignup, onSwitchToLogin, loading = false, error = null }) => {
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: '',
-    role: UserRole.STUDENT
+    confirmPassword: '',
+    role: UserRole.STUDENT,
+    agreeToTerms: false
   });
   const [formErrors, setFormErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -40,6 +48,12 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
   const validateForm = () => {
     const errors = {};
     
+    if (!formData.name.trim()) {
+      errors.name = 'Full name is required';
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters long';
+    }
+    
     if (!formData.email) {
       errors.email = 'Email is required';
     } else if (!validateEmail(formData.email)) {
@@ -48,12 +62,24 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
     
     if (!formData.password) {
       errors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters long';
+    } else if (formData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters long';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      errors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+    }
+    
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
     }
     
     if (!formData.role) {
       errors.role = 'Please select a role';
+    }
+    
+    if (!formData.agreeToTerms) {
+      errors.agreeToTerms = 'You must agree to the terms and conditions';
     }
     
     setFormErrors(errors);
@@ -63,14 +89,16 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      onLogin(formData);
+      const { confirmPassword, agreeToTerms, ...signupData } = formData;
+      onSignup(signupData);
     }
   };
 
   const handleChange = (field) => (e) => {
+    const value = field === 'agreeToTerms' ? e.target.checked : e.target.value;
     setFormData(prev => ({
       ...prev,
-      [field]: e.target.value
+      [field]: value
     }));
     
     // Clear error when user starts typing
@@ -111,19 +139,19 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
           <Box 
             className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
             sx={{ 
-              background: 'linear-gradient(45deg, #00d4ff, #a855f7)',
-              boxShadow: '0 8px 16px rgba(0,212,255,0.3)'
+              background: 'linear-gradient(45deg, #a855f7, #10b981)',
+              boxShadow: '0 8px 16px rgba(168,85,247,0.3)'
             }}
           >
-            <LockPersonOutlinedIcon 
+            <PersonAddOutlinedIcon 
               sx={{ fontSize: 32, color: 'white' }} 
             />
           </Box>
           <Typography variant="h4" className="font-bold mb-2">
-            Welcome Back
+            Create Account
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Sign in to your account to continue
+            Join Placemint and start your career journey
           </Typography>
         </Box>
 
@@ -143,6 +171,30 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
 
         <form onSubmit={handleSubmit}>
           <Stack spacing={4}>
+            <TextField
+              fullWidth
+              label="Full Name"
+              type="text"
+              value={formData.name}
+              onChange={handleChange('name')}
+              error={!!formErrors.name}
+              helperText={formErrors.name}
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <BadgeOutlinedIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: 2,
+                }
+              }}
+            />
+
             <FormControl fullWidth>
               <InputLabel>Select Role</InputLabel>
               <Select
@@ -234,6 +286,73 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
               }}
             />
 
+            <TextField
+              fullWidth
+              label="Confirm Password"
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={formData.confirmPassword}
+              onChange={handleChange('confirmPassword')}
+              error={!!formErrors.confirmPassword}
+              helperText={formErrors.confirmPassword}
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockPersonOutlinedIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      edge="end"
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  background: 'rgba(255,255,255,0.05)',
+                  borderRadius: 2,
+                }
+              }}
+            />
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.agreeToTerms}
+                  onChange={handleChange('agreeToTerms')}
+                  sx={{ 
+                    color: 'text.secondary',
+                    '&.Mui-checked': {
+                      color: 'primary.main'
+                    }
+                  }}
+                />
+              }
+              label={
+                <Typography variant="body2" color="text.secondary">
+                  I agree to the{' '}
+                  <Typography component="span" color="primary.main" className="cursor-pointer">
+                    Terms of Service
+                  </Typography>
+                  {' '}and{' '}
+                  <Typography component="span" color="primary.main" className="cursor-pointer">
+                    Privacy Policy
+                  </Typography>
+                </Typography>
+              }
+            />
+            {formErrors.agreeToTerms && (
+              <Typography variant="caption" color="error" className="mt-1 ml-2">
+                {formErrors.agreeToTerms}
+              </Typography>
+            )}
+
             <Button
               type="submit"
               variant="contained"
@@ -243,11 +362,11 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
               sx={{ 
                 py: 2,
                 borderRadius: 2,
-                background: 'linear-gradient(45deg, #00d4ff, #a855f7)',
-                boxShadow: '0 8px 16px rgba(0,212,255,0.3)',
+                background: 'linear-gradient(45deg, #a855f7, #10b981)',
+                boxShadow: '0 8px 16px rgba(168,85,247,0.3)',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #00b4d8, #9333ea)',
-                  boxShadow: '0 12px 24px rgba(0,212,255,0.4)',
+                  background: 'linear-gradient(45deg, #9333ea, #059669)',
+                  boxShadow: '0 12px 24px rgba(168,85,247,0.4)',
                   transform: 'translateY(-2px)'
                 },
                 '&:disabled': {
@@ -256,7 +375,7 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
                 }
               }}
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </Stack>
         </form>
@@ -269,12 +388,12 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
 
         <Box className="text-center">
           <Typography variant="body2" color="text.secondary" className="mb-2">
-            Don't have an account?
+            Already have an account?
           </Typography>
           <Button 
             variant="outlined" 
             fullWidth
-            onClick={onSwitchToSignup}
+            onClick={onSwitchToLogin}
             sx={{ 
               borderRadius: 2,
               borderColor: 'rgba(255,255,255,0.2)',
@@ -285,7 +404,7 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
               }
             }}
           >
-            Create New Account
+            Sign In Instead
           </Button>
         </Box>
       </CardContent>
@@ -293,4 +412,4 @@ const LoginForm = ({ onLogin, onSwitchToSignup, loading = false, error = null })
   );
 };
 
-export default LoginForm;
+export default SignupForm;
