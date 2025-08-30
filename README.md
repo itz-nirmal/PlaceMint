@@ -1,6 +1,0 @@
-Team No : 19
-Member 01: Nirmal Haldar
-Member 02: Vibhor Singh
-Member 03: Sambit Sinha
-Problame Statement: 1. Placement Project Tracker
-
